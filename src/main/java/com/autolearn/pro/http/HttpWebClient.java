@@ -1,5 +1,6 @@
 package com.autolearn.pro.http;
 
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.ResponseCache;
@@ -21,8 +22,23 @@ import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
+import javax.imageio.ImageIO;
+
 
 public class HttpWebClient {
+
+    public HttpWebClient() {
+        CookieStore cookieStore = new BasicCookieStore();
+        LaxRedirectStrategy redirectStrategy = new LaxRedirectStrategy();
+        httpclient = HttpClients.custom()
+                .setRedirectStrategy(redirectStrategy)
+                .setDefaultCookieStore(cookieStore)
+                .build();
+    }
+
+    public void close() throws IOException {
+        httpclient.close();
+    }
 
     private CloseableHttpClient httpclient;
 
@@ -58,70 +74,117 @@ public class HttpWebClient {
         }
     }
 
-
-    public HttpClient clientPost(String url) throws Exception {
-        HttpGet httpget = new HttpGet(url);
-        CloseableHttpResponse response = null;
-        CookieStore cookieStore = new BasicCookieStore();
-        LaxRedirectStrategy redirectStrategy = new LaxRedirectStrategy();
-
-        httpclient = HttpClients.custom()
-                .setRedirectStrategy(redirectStrategy)
-                .setDefaultCookieStore(cookieStore)
-                .build();
-        try {
-            response = httpclient.execute(httpget);
-            httpget = new HttpGet("http://www.learning.gov.cn/system/akey_img.php?" + Math.random());
-            response = httpclient.execute(httpget);
-            HttpEntity entity = response.getEntity();
-            InputStream stream = entity.getContent();
-            String classpath = Thread.currentThread()
-                    .getContextClassLoader()
-                    .getResource("../").toString();
-            String fileDirPath =  classpath.substring(5);
-            writeImageToDisk(readInputStream(stream),fileDirPath);
+    public String pageGet(String pageUrl) throws IOException {
+        HttpGet httpget = new HttpGet(pageUrl);
+        CloseableHttpResponse response = httpclient.execute(httpget);
+        int code = response.getStatusLine().getStatusCode();
+        if (code == 200) {
+            String content = EntityUtils.toString(response.getEntity(), Consts.UTF_8);
+            response.close();
+            return content;
+        } else {
+            return "";
         }
-        finally {
+    }
+
+    public Boolean resourceGet(String resUrl, String savePath, String fileName) throws Exception {
+        Boolean result = false;
+        HttpGet httpget = new HttpGet(resUrl);
+        CloseableHttpResponse response = null;
+        try {
+            System.out.println("begin get  resource url:" + resUrl);
+            response = httpclient.execute(httpget);
+            int code = response.getStatusLine().getStatusCode();
+            if (code == 200) {
+                result = true;
+                HttpEntity entity = response.getEntity();
+                InputStream stream = entity.getContent();
+                System.out.println("saving image!");
+                writeImageToDisk(readInputStream(stream), savePath, fileName);
+                System.out.println("Image saved!");
+            }
+
+        } finally {
             response.close();
         }
-        return httpclient;
+        return result;
     }
-    public boolean loginPost(String url ,String username,String pwd,String authKey) throws IOException {
-        boolean result =false;
+
+    public BufferedImage resourceGet(String resUrl) throws Exception {
+        HttpGet httpget = new HttpGet(resUrl);
+        CloseableHttpResponse response = null;
+        try {
+            response = httpclient.execute(httpget);
+            int code = response.getStatusLine().getStatusCode();
+            if (code == 200) {
+                HttpEntity entity = response.getEntity();
+                InputStream stream = entity.getContent();
+                //直接用URL获取图片
+                BufferedImage image = ImageIO.read(stream);
+                return image;
+            }
+
+        } finally {
+            response.close();
+        }
+        return null;
+    }
+
+    public Boolean formPost(String url, List<NameValuePair> params) throws IOException {
+        Boolean result = false;
         HttpPost post = new HttpPost(url);
-        List<NameValuePair> formParams = new ArrayList<>();
-        formParams.add(new BasicNameValuePair("username",username));
-        formParams.add(new BasicNameValuePair("password",pwd));
-        formParams.add(new BasicNameValuePair("authKey",authKey));
-        UrlEncodedFormEntity entity = new UrlEncodedFormEntity(formParams, Consts.UTF_8);
+
+        UrlEncodedFormEntity entity = new UrlEncodedFormEntity(params, Consts.UTF_8);
         post.setEntity(entity);
+        System.out.println("do post!");
         CloseableHttpResponse response = httpclient.execute(post);
         int code = response.getStatusLine().getStatusCode();
-        String content = EntityUtils.toString(response.getEntity());
-        HttpGet get = new HttpGet("http://yuhang.learning.gov.cn/study/");
-        response = httpclient.execute(get);
-        content = EntityUtils.toString(response.getEntity());
-        return  true;
+        if (code == 200) {
+            result = true;
+        }
+        return result;
     }
-    byte[] readInputStream(InputStream inStream) throws Exception{
+
+    public String formAjaxPost(String url, List<NameValuePair> params) throws IOException
+    {
+
+        HttpPost post = new HttpPost(url);
+        post.addHeader("X-Requested-With","XMLHttpRequest");
+        UrlEncodedFormEntity entity = new UrlEncodedFormEntity(params, Consts.UTF_8);
+        post.setEntity(entity);
+        System.out.println("do post!");
+        CloseableHttpResponse response = httpclient.execute(post);
+        int code = response.getStatusLine().getStatusCode();
+        if (code == 200) {
+            String content = EntityUtils.toString(response.getEntity(), Consts.UTF_8);
+            System.out.println("ajax content:");
+            System.out.println(content);
+            return content;
+        }
+        return null;
+    }
+
+    private byte[] readInputStream(InputStream inStream) throws Exception {
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
         byte[] buffer = new byte[1024];
         int len = 0;
-        while( (len=inStream.read(buffer)) != -1 ){
+        while ((len = inStream.read(buffer)) != -1) {
             outStream.write(buffer, 0, len);
         }
         inStream.close();
         return outStream.toByteArray();
     }
-    void writeImageToDisk(byte[] img, String fileName){
+
+    private void writeImageToDisk(byte[] img, String path, String filename) {
         try {
-            String path = fileName+"images/";
             File file = new File(path);
             if (!file.exists() && file.isDirectory()) file.mkdir();
-            path = path + "temp.png";
-            file = new File(path);
-            if (!file.exists())
-            {
+            String fullpath = path + filename;
+            file = new File(fullpath);
+            if (!file.exists()) {
+                file.createNewFile();
+            } else {
+                file.delete();
                 file.createNewFile();
             }
             FileOutputStream fops = new FileOutputStream(file);
