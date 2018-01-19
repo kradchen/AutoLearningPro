@@ -18,7 +18,7 @@
     <label >密码：</label>
     <input type="password" id="pwd" name="pwd" class="form-control" placeholder="密码" required>
     <input type="text" id="authKey" name="authKey" placeholder="验证码" required >
-    <img style="vertical-align: middle;" height="23" width="80" id="authKeyImag" src="../images/temp.png"   >
+    <img style="vertical-align: middle;" height="23" width="80" id="authKeyImag" src="/autolearnpro/authkey/?"+Math.random()   >
     <button type="submit">登录</button>
 </form>
 </body>

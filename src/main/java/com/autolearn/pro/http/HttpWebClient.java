@@ -21,12 +21,15 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.imageio.ImageIO;
 
 
 public class HttpWebClient {
 
+    protected Logger logger = LogManager.getLogger(HttpWebClient.class);
     public HttpWebClient() {
         CookieStore cookieStore = new BasicCookieStore();
         LaxRedirectStrategy redirectStrategy = new LaxRedirectStrategy();
@@ -76,13 +79,18 @@ public class HttpWebClient {
 
     public String pageGet(String pageUrl) throws IOException {
         HttpGet httpget = new HttpGet(pageUrl);
+        logger.info("try page get url:"+pageUrl);
         CloseableHttpResponse response = httpclient.execute(httpget);
         int code = response.getStatusLine().getStatusCode();
         if (code == 200) {
             String content = EntityUtils.toString(response.getEntity(), Consts.UTF_8);
+            logger.debug("page get content:");
+            logger.debug(content);
+            logger.info("page getted! url:"+pageUrl);
             response.close();
             return content;
         } else {
+            logger.warn("page getted failed! url:"+pageUrl);
             return "";
         }
     }
@@ -92,19 +100,28 @@ public class HttpWebClient {
         HttpGet httpget = new HttpGet(resUrl);
         CloseableHttpResponse response = null;
         try {
-            System.out.println("begin get  resource url:" + resUrl);
+            logger.info("begin get  resource url:" + resUrl);
             response = httpclient.execute(httpget);
+
             int code = response.getStatusLine().getStatusCode();
             if (code == 200) {
+                logger.info("resource getted! url:" + resUrl);
                 result = true;
                 HttpEntity entity = response.getEntity();
                 InputStream stream = entity.getContent();
-                System.out.println("saving image!");
+                logger.info("saving image!");
                 writeImageToDisk(readInputStream(stream), savePath, fileName);
-                System.out.println("Image saved!");
+                logger.info("Image saved!");
             }
 
-        } finally {
+        }
+        catch (Exception ex)
+        {
+            logger.warn("resource getfailed! url:" + resUrl);
+            throw  ex;
+        }
+        finally {
+
             response.close();
         }
         return result;
@@ -114,9 +131,11 @@ public class HttpWebClient {
         HttpGet httpget = new HttpGet(resUrl);
         CloseableHttpResponse response = null;
         try {
+            logger.info("begin get  resource url:" + resUrl);
             response = httpclient.execute(httpget);
             int code = response.getStatusLine().getStatusCode();
             if (code == 200) {
+                logger.info("resource getted! url:" + resUrl);
                 HttpEntity entity = response.getEntity();
                 InputStream stream = entity.getContent();
                 //直接用URL获取图片
@@ -124,7 +143,13 @@ public class HttpWebClient {
                 return image;
             }
 
-        } finally {
+        }
+        catch (Exception ex)
+        {
+            logger.warn("resource getfailed! url:" + resUrl);
+            throw  ex;
+        }
+        finally {
             response.close();
         }
         return null;
@@ -136,12 +161,14 @@ public class HttpWebClient {
 
         UrlEncodedFormEntity entity = new UrlEncodedFormEntity(params, Consts.UTF_8);
         post.setEntity(entity);
-        System.out.println("do post!");
+        logger.info("do post!");
         CloseableHttpResponse response = httpclient.execute(post);
         int code = response.getStatusLine().getStatusCode();
         if (code == 200) {
+            logger.info("post sucess!");
             result = true;
         }
+        else logger.warn("ajax post failed!");
         return result;
     }
 
@@ -152,15 +179,18 @@ public class HttpWebClient {
         post.addHeader("X-Requested-With","XMLHttpRequest");
         UrlEncodedFormEntity entity = new UrlEncodedFormEntity(params, Consts.UTF_8);
         post.setEntity(entity);
-        System.out.println("do post!");
+        logger.info("do ajax post!");
         CloseableHttpResponse response = httpclient.execute(post);
         int code = response.getStatusLine().getStatusCode();
         if (code == 200) {
+            logger.info("ajax post sucess!");
             String content = EntityUtils.toString(response.getEntity(), Consts.UTF_8);
-            System.out.println("ajax content:");
-            System.out.println(content);
+            logger.debug("ajax content:");
+            logger.debug(content);
             return content;
         }
+        else logger.warn("ajax post failed!");
+
         return null;
     }
 

@@ -1,5 +1,6 @@
 package com.autolearn.pro.controller;
 
+import com.autolearn.pro.Log.DefaultLoggerFactory;
 import com.autolearn.pro.http.HttpWebClient;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,7 +17,7 @@ public class AuthKeyController {
     public void getAuthCodeImg(HttpServletResponse response, HttpSession httpSession)
             throws Exception
     {
-        System.out.println("authkey excute!");
+        DefaultLoggerFactory.getDefaultLogger().info("authkey excute!");
         HttpWebClient webClient = (HttpWebClient) httpSession.getAttribute("client");
         //设置response头信息
         //禁止缓存

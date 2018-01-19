@@ -9,7 +9,7 @@
         <module name="AutoLearningPro" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel target="1.8">
+    <bytecodeTargetLevel target="1.7">
       <module name="AutoLearningPro" target="1.8" />
     </bytecodeTargetLevel>
   </component>
