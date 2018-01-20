@@ -10,6 +10,9 @@
 <head>
     <title></title>
     <link rel='stylesheet' href='/stylesheets/style.css' />
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <script src="/autolearnpro/js/axios.min.js"></script>
+
 </head>
 <body>
 <form  action="/autolearnpro/login/" method="post" >
@@ -21,5 +24,28 @@
     <img style="vertical-align: middle;" height="23" width="80" id="authKeyImag" src="/autolearnpro/authkey/?"+Math.random()   >
     <button type="submit">登录</button>
 </form>
+<ul id="learnerList">
+    <li v-for="item in items">
+        {{ item.userName }}
+    </li>
+</ul>
+<script >
+    var vm = new Vue({
+        el:"#learnerList",
+        data:{
+            items:[{userName:"asdadad"}]
+        }
+    });
+
+    axios.get('/autolearnpro/learnlist/')
+        .then(function (response) {
+            vm.items = response.data;
+            console.log(response);
+            console.log(vm.items);
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+</script>
 </body>
 </html>

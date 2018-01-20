@@ -4,11 +4,7 @@ import com.autolearn.pro.BackgroundLearner;
 import com.autolearn.pro.Log.DefaultLoggerFactory;
 import com.autolearn.pro.http.HttpWebClient;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.util.EntityUtils;
-import org.json.JSONObject;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -22,11 +18,11 @@ import java.util.List;
 public class LoginController {
     @RequestMapping(value="/login/",method = RequestMethod.GET)
     public String login(HttpSession httpSession){
-        HttpWebClient webclient = new HttpWebClient();
+        HttpWebClient webClient = new HttpWebClient();
         try {
-            String result = webclient.pageGet("http://yuhang.learning.gov.cn/study/login.php");
+            String result = webClient.pageGet("http://yuhang.learning.gov.cn/study/login.php");
             if(result.length()>0) {
-                httpSession.setAttribute("client", webclient);
+                httpSession.setAttribute("client", webClient);
                 //暂时先不管失败怎么办
             }
         } catch (Exception e) {
@@ -45,13 +41,14 @@ public class LoginController {
             formParams.add(new BasicNameValuePair("authKey", authKey));
             //login
             DefaultLoggerFactory.getDefaultLogger().info("user:" + userID + " do login!");
-            webClient.formPost("http://yuhang.learning.gov.cn/study/login.php",
+            String content = webClient.formPost("http://yuhang.learning.gov.cn/study/login.php",
                     formParams);
+            if (content.indexOf("学员登录")>0) return "fail";
             BackgroundLearner.addLearnTask(webClient,userID);
 
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return "result";
+        return "success";
     }
 }

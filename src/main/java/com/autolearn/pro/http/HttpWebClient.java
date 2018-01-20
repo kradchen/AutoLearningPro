@@ -155,21 +155,20 @@ public class HttpWebClient {
         return null;
     }
 
-    public Boolean formPost(String url, List<NameValuePair> params) throws IOException {
-        Boolean result = false;
+    public String formPost(String url, List<NameValuePair> params) throws IOException {
         HttpPost post = new HttpPost(url);
 
         UrlEncodedFormEntity entity = new UrlEncodedFormEntity(params, Consts.UTF_8);
         post.setEntity(entity);
-        logger.info("do post!");
+        logger.info("do form post!");
         CloseableHttpResponse response = httpclient.execute(post);
         int code = response.getStatusLine().getStatusCode();
         if (code == 200) {
-            logger.info("post sucess!");
-            result = true;
+            String content = EntityUtils.toString(response.getEntity(), Consts.UTF_8);
+            return content;
         }
-        else logger.warn("ajax post failed!");
-        return result;
+        else logger.warn("form post failed!");
+        return "";
     }
 
     public String formAjaxPost(String url, List<NameValuePair> params) throws IOException
@@ -185,8 +184,6 @@ public class HttpWebClient {
         if (code == 200) {
             logger.info("ajax post sucess!");
             String content = EntityUtils.toString(response.getEntity(), Consts.UTF_8);
-            logger.debug("ajax content:");
-            logger.debug(content);
             return content;
         }
         else logger.warn("ajax post failed!");
